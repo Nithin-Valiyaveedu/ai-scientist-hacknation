@@ -1,7 +1,7 @@
 # The AI Scientist
 ### From Hypothesis to Runnable Experiment
 
-> Hack-Nation × World Bank Youth Summit · Global AI Hackathon 2026
+> Built for Hack-Nation 2026
 
 ---
 
@@ -214,7 +214,6 @@ standard DMSO protocol.
 
 ---
 
-## Contact
+## License
 
-Built for Hack-Nation × World Bank Youth Summit 2026.
-Built for the Hack-Nation × World Bank Youth Summit Global AI Hackathon 2026.
+MIT © 2026 Nithin Valiyaveedu — see [LICENSE](./LICENSE)
