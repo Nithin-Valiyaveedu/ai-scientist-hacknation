@@ -10,7 +10,7 @@
 An AI-powered tool that takes a natural language scientific hypothesis and returns
 a complete, operationally grounded lab experiment plan. Built for the
 Hack-Nation × World Bank Youth Summit Global AI Hackathon 2026, in collaboration
-with Fulcrum Science.
+.
 
 **Live stack:** FastAPI (Python) + React/Vite + Supabase (pgvector) + OpenAI GPT-4o + Tavily
 

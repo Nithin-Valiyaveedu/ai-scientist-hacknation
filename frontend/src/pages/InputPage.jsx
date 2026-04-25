@@ -65,7 +65,7 @@ export default function InputPage() {
               style={{ background: 'var(--accent)' }}
             />
             <span className="font-sans text-sm font-500" style={{ color: 'var(--accent)' }}>
-              Powered by Fulcrum Science
+              AI Hackathon 2026
             </span>
           </div>
 
@@ -139,7 +139,7 @@ export default function InputPage() {
             Hack-Nation × World Bank Youth Summit · Global AI Hackathon 2026
           </span>
           <span className="font-sans text-xs" style={{ color: 'var(--muted)' }}>
-            arun@fulcrum.science
+            Hack-Nation × World Bank Youth Summit · Global AI Hackathon 2026
           </span>
         </div>
       </footer>
