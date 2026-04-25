@@ -82,23 +82,37 @@ export default function InputPage() {
 
           {/* Search form */}
           <form onSubmit={handleSubmit} className="w-full flex flex-col gap-3">
-            <div className="flex gap-2 w-full">
-              <input
-                type="text"
+            <div className="flex flex-col gap-2 w-full">
+              <textarea
                 value={question}
-                onChange={(e) => setQuestion(e.target.value)}
-                placeholder="Describe your scientific hypothesis…"
-                className="sci-input px-4 py-3 flex-1"
+                onChange={(e) => {
+                  setQuestion(e.target.value)
+                  e.target.style.height = 'auto'
+                  e.target.style.height = e.target.scrollHeight + 'px'
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleSubmit(e)
+                }}
+                placeholder="Describe your scientific hypothesis in as much detail as you like…&#10;&#10;e.g. Replacing sucrose with trehalose as a cryoprotectant will increase post-thaw viability of HeLa cells by at least 15 percentage points compared to the standard DMSO protocol."
+                className="sci-input px-4 py-3 w-full resize-none"
+                rows={4}
+                style={{ minHeight: 100, lineHeight: 1.7, overflow: 'hidden' }}
                 disabled={loading}
                 autoFocus
               />
-              <button
-                type="submit"
-                className="btn-primary px-6 py-3 whitespace-nowrap"
-                disabled={loading || !question.trim()}
-              >
-                {loading ? 'Searching…' : 'Analyse →'}
-              </button>
+              <div className="flex items-center justify-between">
+                <span className="font-sans text-xs" style={{ color: 'var(--muted)' }}>
+                  {question.trim().length > 0 ? `${question.trim().split(/\s+/).length} words` : 'Be specific — name the intervention, outcome, and threshold'}
+                  <span className="ml-3 opacity-60">⌘↵ to submit</span>
+                </span>
+                <button
+                  type="submit"
+                  className="btn-primary px-6 py-2.5 whitespace-nowrap rounded"
+                  disabled={loading || !question.trim()}
+                >
+                  {loading ? 'Searching…' : 'Analyse →'}
+                </button>
+              </div>
             </div>
 
             {error && (

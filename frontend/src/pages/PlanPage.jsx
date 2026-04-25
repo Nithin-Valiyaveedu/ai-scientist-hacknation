@@ -68,56 +68,116 @@ function StatPill({ label, value, accent }) {
 // ── Protocol Stepper ───────────────────────────────────────────────────────────
 
 function ProtocolStepper({ steps, question, onCorrection }) {
-  const [active, setActive]   = useState(null)
-  const [local, setLocal]     = useState(steps)
+  const [active, setActive] = useState(0)
+  const [local, setLocal]   = useState(steps)
 
   return (
-    <div className="flex flex-col">
-      {local.map((step, i) => (
-        <div
-          key={i}
-          className="step-item flex gap-3"
-          style={{ animationDelay: `${i * 0.04}s` }}
-        >
-          <div className="flex flex-col items-center flex-shrink-0" style={{ width: 32 }}>
+    <div className="flex flex-col gap-1">
+      {local.map((step, i) => {
+        const isActive = active === i
+        const isDone   = i < active
+        return (
+          <div
+            key={i}
+            className="step-item rounded-lg overflow-hidden transition-all duration-200"
+            style={{
+              animationDelay: `${i * 0.04}s`,
+              border: `1.5px solid ${isActive ? 'var(--accent)' : 'var(--border)'}`,
+              background: isActive ? 'var(--accent-light)' : 'var(--surface)',
+            }}
+          >
+            {/* Header row — always visible */}
             <button
-              onClick={() => setActive(active === i ? null : i)}
-              className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 font-mono text-xs font-bold transition-all duration-200"
-              style={{
-                border: `2px solid ${active === i ? 'var(--accent)' : 'var(--border)'}`,
-                background: active === i ? 'var(--accent-light)' : 'var(--surface2)',
-                color: active === i ? 'var(--accent)' : 'var(--muted)',
-                cursor: 'pointer',
-              }}
+              onClick={() => setActive(isActive ? -1 : i)}
+              className="w-full flex items-center gap-3 px-4 py-3 text-left"
+              style={{ cursor: 'pointer', background: 'transparent', border: 'none' }}
             >
-              {String(i + 1).padStart(2, '0')}
-            </button>
-            {i < local.length - 1 && <div className="step-connector flex-1 my-1" style={{ minHeight: 12 }} />}
-          </div>
-
-          <div className="flex-1 pb-4 pt-1">
-            <InlineEdit
-              originalText={step}
-              question={question}
-              category="protocol"
-              itemLabel={`Step ${i + 1}`}
-              onSaved={(corrected) => {
-                const updated = [...local]
-                updated[i] = corrected
-                setLocal(updated)
-                onCorrection()
-              }}
-            >
-              <p
-                className="font-sans text-sm leading-relaxed pr-8 transition-colors duration-200"
-                style={{ color: active === i ? 'var(--ink)' : 'var(--body)' }}
+              {/* Step badge */}
+              <span
+                className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center font-mono text-xs font-bold transition-all duration-200"
+                style={{
+                  background: isDone ? 'var(--success)' : isActive ? 'var(--accent)' : 'var(--surface2)',
+                  color: isDone || isActive ? 'white' : 'var(--muted)',
+                  border: `1.5px solid ${isDone ? 'var(--success)' : isActive ? 'var(--accent)' : 'var(--border)'}`,
+                }}
               >
-                {step}
-              </p>
-            </InlineEdit>
+                {isDone ? (
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                ) : String(i + 1).padStart(2, '0')}
+              </span>
+
+              {/* Step preview */}
+              <span
+                className="flex-1 font-sans text-sm leading-snug"
+                style={{
+                  color: isActive ? 'var(--accent)' : isDone ? 'var(--muted)' : 'var(--ink)',
+                  fontWeight: isActive ? 600 : 400,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: isActive ? 'normal' : 'nowrap',
+                }}
+              >
+                {isActive ? `Step ${i + 1}` : step}
+              </span>
+
+              {/* Chevron */}
+              <svg
+                width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                style={{
+                  color: 'var(--muted)',
+                  transform: isActive ? 'rotate(180deg)' : 'rotate(0deg)',
+                  transition: 'transform 0.2s',
+                  flexShrink: 0,
+                }}
+              >
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
+
+            {/* Expanded body */}
+            {isActive && (
+              <div className="px-4 pb-4 pt-0 border-t" style={{ borderColor: '#bfdbfe' }}>
+                <InlineEdit
+                  originalText={step}
+                  question={question}
+                  category="protocol"
+                  itemLabel={`Step ${i + 1}`}
+                  onSaved={(corrected) => {
+                    const updated = [...local]
+                    updated[i] = corrected
+                    setLocal(updated)
+                    onCorrection()
+                  }}
+                >
+                  <p className="font-sans text-sm leading-relaxed pt-3 pr-8" style={{ color: 'var(--body)' }}>
+                    {step}
+                  </p>
+                </InlineEdit>
+                <div className="flex gap-2 mt-4">
+                  {i > 0 && (
+                    <button onClick={() => setActive(i - 1)} className="btn-ghost px-3 py-1 text-xs rounded">
+                      ← Prev
+                    </button>
+                  )}
+                  {i < local.length - 1 && (
+                    <button onClick={() => setActive(i + 1)} className="btn-primary px-3 py-1 text-xs rounded">
+                      Next →
+                    </button>
+                  )}
+                  {i === local.length - 1 && (
+                    <span className="font-sans text-xs px-3 py-1 rounded" style={{ background: 'var(--success-light)', color: 'var(--success)', border: '1px solid #6ee7b7' }}>
+                      ✓ Protocol complete
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }
@@ -255,36 +315,118 @@ function MaterialsTab({ materials, question, onCorrection }) {
 // ── Timeline Tab ───────────────────────────────────────────────────────────────
 
 function TimelineTab({ timeline, question, onCorrection }) {
+  const [activePhase, setActivePhase] = useState(0)
+  const PHASE_COLORS = ['var(--accent)', 'var(--teal)', '#7c3aed', 'var(--success)']
+
   return (
-    <div className="flex flex-col gap-3">
-      {timeline.map((phase, i) => (
-        <div key={i} className="card px-4 py-4 flex flex-col gap-2.5">
-          <div className="flex items-center gap-2">
-            <span
-              className="font-mono text-xs font-bold px-2 py-0.5 rounded"
-              style={{ background: 'var(--accent-light)', color: 'var(--accent)', border: '1px solid #bfdbfe' }}
+    <div className="flex flex-col gap-5">
+      {/* Phase track */}
+      <div className="flex items-start gap-0 overflow-x-auto pb-1">
+        {timeline.map((phase, i) => (
+          <div key={i} className="flex items-center flex-shrink-0" style={{ minWidth: 0 }}>
+            <button
+              onClick={() => setActivePhase(i)}
+              className="flex flex-col items-center gap-1.5 group"
+              style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '0 4px' }}
             >
-              {phase.phase}
+              <div
+                className="w-9 h-9 rounded-full flex items-center justify-center font-mono text-xs font-bold transition-all duration-200"
+                style={{
+                  background: activePhase === i ? PHASE_COLORS[i % PHASE_COLORS.length] : 'var(--surface2)',
+                  color: activePhase === i ? 'white' : 'var(--muted)',
+                  border: `2px solid ${activePhase === i ? PHASE_COLORS[i % PHASE_COLORS.length] : 'var(--border)'}`,
+                  boxShadow: activePhase === i ? `0 0 0 4px ${PHASE_COLORS[i % PHASE_COLORS.length]}20` : 'none',
+                }}
+              >
+                {i + 1}
+              </div>
+              <span
+                className="font-sans text-xs font-600 whitespace-nowrap"
+                style={{ color: activePhase === i ? PHASE_COLORS[i % PHASE_COLORS.length] : 'var(--muted)' }}
+              >
+                {phase.phase}
+              </span>
+            </button>
+
+            {/* Connector line */}
+            {i < timeline.length - 1 && (
+              <div
+                style={{
+                  height: 2,
+                  width: 40,
+                  marginBottom: 20,
+                  background: i < activePhase
+                    ? PHASE_COLORS[i % PHASE_COLORS.length]
+                    : 'var(--border)',
+                  transition: 'background 0.3s',
+                  flexShrink: 0,
+                }}
+              />
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Active phase tasks */}
+      {timeline[activePhase] && (
+        <div
+          className="card px-4 py-4 flex flex-col gap-3 animate-fade-in"
+          style={{ borderColor: PHASE_COLORS[activePhase % PHASE_COLORS.length], borderWidth: 1.5 }}
+        >
+          <div className="flex items-center justify-between">
+            <span
+              className="font-sans font-bold text-sm"
+              style={{ color: PHASE_COLORS[activePhase % PHASE_COLORS.length] }}
+            >
+              {timeline[activePhase].phase}
+            </span>
+            <span className="font-sans text-xs" style={{ color: 'var(--muted)' }}>
+              {timeline[activePhase].tasks.length} task{timeline[activePhase].tasks.length !== 1 ? 's' : ''}
             </span>
           </div>
-          <ul className="flex flex-col gap-1.5">
-            {phase.tasks.map((task, j) => (
-              <li key={j} className="flex items-start gap-2.5">
-                <span className="flex-shrink-0 mt-2 w-1 h-1 rounded-full" style={{ background: 'var(--muted)' }} />
+
+          <ul className="flex flex-col gap-2">
+            {timeline[activePhase].tasks.map((task, j) => (
+              <li key={j} className="flex items-start gap-3">
+                <span
+                  className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center font-mono text-xs font-bold mt-0.5"
+                  style={{
+                    background: `${PHASE_COLORS[activePhase % PHASE_COLORS.length]}18`,
+                    color: PHASE_COLORS[activePhase % PHASE_COLORS.length],
+                    border: `1px solid ${PHASE_COLORS[activePhase % PHASE_COLORS.length]}40`,
+                  }}
+                >
+                  {j + 1}
+                </span>
                 <InlineEdit
                   originalText={task}
                   question={question}
                   category="timeline"
-                  itemLabel={`${phase.phase} — Task ${j + 1}`}
+                  itemLabel={`${timeline[activePhase].phase} — Task ${j + 1}`}
                   onSaved={onCorrection}
                 >
-                  <span className="font-sans text-sm pr-8" style={{ color: 'var(--body)' }}>{task}</span>
+                  <span className="font-sans text-sm leading-relaxed pr-8" style={{ color: 'var(--body)' }}>{task}</span>
                 </InlineEdit>
               </li>
             ))}
           </ul>
+
+          {/* Phase navigation */}
+          <div className="flex gap-2 pt-1 border-t" style={{ borderColor: 'var(--border)' }}>
+            {activePhase > 0 && (
+              <button onClick={() => setActivePhase(p => p - 1)} className="btn-ghost px-3 py-1 text-xs rounded">← Previous</button>
+            )}
+            {activePhase < timeline.length - 1 && (
+              <button
+                onClick={() => setActivePhase(p => p + 1)}
+                className="btn-primary px-3 py-1 text-xs rounded"
+              >
+                Next Phase →
+              </button>
+            )}
+          </div>
         </div>
-      ))}
+      )}
     </div>
   )
 }

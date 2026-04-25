@@ -118,7 +118,13 @@ export default function InlineEdit({
       className="relative group"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      style={{ borderRadius: 4 }}
+      style={{
+        borderRadius: 4,
+        background: hovered ? '#eff6ff' : 'transparent',
+        outline: hovered ? '1.5px solid #bfdbfe' : '1.5px solid transparent',
+        transition: 'background 0.15s, outline 0.15s',
+        padding: hovered ? '2px 4px' : '2px 4px',
+      }}
     >
       {/* Saved flash */}
       {saved && (
