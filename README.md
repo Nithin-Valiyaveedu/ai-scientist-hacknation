@@ -45,11 +45,10 @@ Paste a scientific hypothesis. In under 60 seconds, LabAgent returns a complete,
 | Animations | Framer Motion |
 
 ---
-
 ## Project Structure
 
 ```
-mvp/
+ai-scientist-hacknation/
 ├── backend/
 │   ├── main.py                    # FastAPI app + CORS + router registration
 │   ├── routers/
