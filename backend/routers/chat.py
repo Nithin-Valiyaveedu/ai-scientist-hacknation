@@ -80,7 +80,7 @@ def _build_system_prompt(context: dict) -> str:
     has_literature = bool(papers or refs)
 
     if has_plan:
-        return f"""You are an expert scientific advisor embedded in The AI Scientist platform.
+        return f"""You are an expert scientific advisor embedded in LabAgent platform.
 You are helping a researcher understand and refine their experiment plan.
 
 HYPOTHESIS:
@@ -108,7 +108,7 @@ Your role:
 Do NOT make up catalog numbers or prices not already in the plan."""
 
     if has_literature:
-        return f"""You are an expert scientific literature analyst embedded in The AI Scientist platform.
+        return f"""You are an expert scientific literature analyst embedded in LabAgent platform.
 A researcher has submitted the following hypothesis and retrieved relevant papers. Help them understand the literature.
 
 HYPOTHESIS:
@@ -130,7 +130,7 @@ Your role:
 - Be specific — cite paper titles or years when relevant
 - Be concise and precise — this is a professional scientific context"""
 
-    return f"""You are an expert scientific advisor in The AI Scientist platform.
+    return f"""You are an expert scientific advisor in LabAgent platform.
 The researcher's hypothesis is: {question}
 Answer their questions about scientific methodology, literature, and experimental design."""
 

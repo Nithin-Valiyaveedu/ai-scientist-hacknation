@@ -8,7 +8,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@11labs/react": "^0.2.0",
     "@ai-sdk/react": "^3.0.170",
+    "@elevenlabs/react": "^1.2.1",
     "ai": "^6.0.168",
     "framer-motion": "^12.38.0",
     "react": "^18.3.1",
