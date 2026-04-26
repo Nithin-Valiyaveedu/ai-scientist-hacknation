@@ -24,74 +24,76 @@ export default function InlineEdit({
   }, [editing])
 
   const handleSave = async () => {
-    if (draft.trim() === originalText.trim()) {
-      setEditing(false)
-      return
-    }
+    if (draft.trim() === originalText.trim()) { setEditing(false); return }
     setSaving(true)
+    let success = false
     try {
       const res = await fetch('/feedback', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          experiment_question: question,
-          category,
-          item_label:     itemLabel,
-          original_text:  originalText,
-          corrected_text: draft.trim(),
-          comment:        comment.trim(),
-        }),
+        body: JSON.stringify({ experiment_question: question, category, item_label: itemLabel, original_text: originalText, corrected_text: draft.trim(), comment: comment.trim() }),
       })
-      if (!res.ok) throw new Error('Save failed')
+      if (!res.ok) { const body = await res.json().catch(() => ({})); throw new Error(`Save failed ${res.status}: ${body.detail || 'unknown error'}`) }
+      success = true
       setSaved(true)
-      onSaved?.(draft.trim())
       setTimeout(() => setSaved(false), 2500)
     } catch (err) {
-      console.error(err)
+      console.error('InlineEdit save error:', err)
     } finally {
-      setSaving(false)
-      setEditing(false)
-      setComment('')
+      setSaving(false); setEditing(false); setComment('')
+      onSaved?.(draft.trim(), success)
     }
   }
 
-  const handleCancel = () => {
-    setEditing(false)
-    setDraft(originalText)
-    setComment('')
-  }
+  const handleCancel = () => { setEditing(false); setDraft(originalText); setComment('') }
 
   if (editing) {
     return (
-      <div
-        className="flex flex-col gap-2 p-3 rounded-xl"
-        style={{ border: '1.5px solid var(--accent)', background: 'var(--accent-light)' }}
-      >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 10, borderRadius: 6, border: '1px solid rgba(0,0,0,0.2)', background: 'var(--bg-base)' }}>
         <textarea
           ref={textareaRef}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           rows={Math.max(3, Math.ceil(draft.length / 80))}
-          className="sci-input p-2 text-sm resize-none rounded-lg"
-          style={{ fontFamily: "'Source Sans 3', sans-serif", lineHeight: 1.65 }}
+          style={{
+            fontFamily: 'Inter, sans-serif', fontSize: 13, lineHeight: 1.65,
+            padding: '8px 10px', borderRadius: 5,
+            border: '1px solid var(--border-soft)',
+            background: 'var(--bg-surface)',
+            color: 'var(--text-primary)',
+            resize: 'none', outline: 'none', width: '100%',
+            letterSpacing: '-0.01em',
+            transition: 'border-color 0.15s',
+          }}
+          onFocus={e => e.target.style.borderColor = 'rgba(0,0,0,0.22)'}
+          onBlur={e => e.target.style.borderColor = 'var(--border-soft)'}
         />
         <input
           type="text"
           value={comment}
           onChange={(e) => setComment(e.target.value)}
-          placeholder="Why this correction? (optional — helps train future plans)"
-          className="sci-input px-3 py-1.5 text-xs rounded-lg"
-          style={{ fontFamily: "'Source Sans 3', sans-serif" }}
+          placeholder="Why this correction? (optional)"
+          style={{
+            fontFamily: 'Inter, sans-serif', fontSize: 12,
+            padding: '6px 10px', borderRadius: 5,
+            border: '1px solid var(--border-soft)',
+            background: 'var(--bg-surface)',
+            color: 'var(--text-primary)', outline: 'none', width: '100%',
+            transition: 'border-color 0.15s',
+          }}
+          onFocus={e => e.target.style.borderColor = 'rgba(0,0,0,0.22)'}
+          onBlur={e => e.target.style.borderColor = 'var(--border-soft)'}
         />
-        <div className="flex gap-2">
+        <div style={{ display: 'flex', gap: 6 }}>
           <button
             onClick={handleSave}
             disabled={saving}
-            className="btn-primary px-4 py-1.5 text-xs rounded-lg"
+            className="btn-primary"
+            style={{ padding: '5px 14px', fontSize: 12 }}
           >
             {saving ? 'Saving…' : 'Save Correction'}
           </button>
-          <button onClick={handleCancel} className="btn-ghost px-4 py-1.5 text-xs rounded-lg">
+          <button onClick={handleCancel} className="btn-ghost" style={{ padding: '5px 14px', fontSize: 12 }}>
             Cancel
           </button>
         </div>
@@ -105,24 +107,24 @@ export default function InlineEdit({
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        borderRadius: 8,
-        background: hovered ? 'var(--accent-light)' : 'transparent',
-        outline: hovered ? '1.5px solid var(--accent-mid)' : '1.5px solid transparent',
+        borderRadius: 5,
+        background: hovered ? 'var(--bg-hover)' : 'transparent',
+        outline: hovered ? '1px solid var(--border-soft)' : '1px solid transparent',
         transition: 'background 0.15s, outline 0.15s',
-        padding: '2px 4px',
+        padding: '1px 3px',
+        position: 'relative',
       }}
     >
       {saved && (
-        <span
-          className="absolute right-0 top-0 font-sans text-xs px-2 py-0.5 rounded-md"
-          style={{
-            background: 'var(--success-light)',
-            color: 'var(--success)',
-            border: '1px solid #A7F3D0',
-            zIndex: 10,
-            whiteSpace: 'nowrap',
-          }}
-        >
+        <span style={{
+          position: 'absolute', right: 2, top: 2,
+          fontFamily: 'Inter, sans-serif', fontSize: 10, fontWeight: 600,
+          padding: '1px 7px', borderRadius: 4,
+          background: 'rgba(45,122,58,0.08)',
+          color: 'var(--diff-add)',
+          border: '1px solid rgba(45,122,58,0.2)',
+          zIndex: 10, whiteSpace: 'nowrap',
+        }}>
           ✓ Saved
         </span>
       )}
@@ -134,25 +136,19 @@ export default function InlineEdit({
           onClick={() => setEditing(true)}
           title="Suggest a correction"
           style={{
-            position: 'absolute',
-            top: 2, right: 2,
-            background: 'var(--surface)',
-            border: '1px solid var(--border)',
-            borderRadius: 6,
-            padding: '2px 7px',
+            position: 'absolute', top: 2, right: 2,
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border-soft)',
+            borderRadius: 5,
+            padding: '2px 8px',
             cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 4,
-            color: 'var(--muted)',
-            fontSize: 11,
-            fontFamily: "'Source Sans 3', sans-serif",
-            fontWeight: 600,
-            boxShadow: 'var(--shadow-xs)',
+            display: 'flex', alignItems: 'center', gap: 4,
+            color: 'var(--text-muted)',
+            fontSize: 11, fontFamily: 'Inter, sans-serif', fontWeight: 500,
             zIndex: 10,
           }}
         >
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
             <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
           </svg>

@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <!-- Background circle -->
+  <rect width="32" height="32" rx="8" fill="#111110"/>
+  <!-- Flask body -->
+  <g transform="translate(7, 4)" stroke="#F2EDE3" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Top rim -->
+    <line x1="6.5" y1="1" x2="11.5" y2="1" stroke-width="1.8"/>
+    <!-- Flask neck -->
+    <line x1="6.5" y1="1" x2="6.5" y2="8" stroke-width="1.8"/>
+    <line x1="11.5" y1="1" x2="11.5" y2="8" stroke-width="1.8"/>
+    <!-- Flask body outline (left side going down to bottom) -->
+    <path d="M6.5 8 L2 16.5" stroke-width="1.8"/>
+    <!-- Flask body outline (right side) -->
+    <path d="M11.5 8 L16 16.5" stroke-width="1.8"/>
+    <!-- Bottom arc -->
+    <path d="M2 16.5 Q2 19.5 9 19.5 Q16 19.5 16 16.5" stroke-width="1.8"/>
+    <!-- Liquid fill (dots/bubbles) -->
+    <circle cx="7" cy="15" r="1.2" fill="#F2EDE3" stroke="none"/>
+    <circle cx="10.5" cy="13.5" r="0.9" fill="#F2EDE3" stroke="none"/>
+    <circle cx="8.5" cy="17" r="0.75" fill="#F2EDE3" stroke="none"/>
+  </g>
+</svg>

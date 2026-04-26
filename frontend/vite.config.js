@@ -21,6 +21,8 @@ export default defineConfig({
       '/literature-qc': 'http://localhost:8000',
       '/generate-plan': { target: 'http://localhost:8000', changeOrigin: true },
       '/feedback':      'http://localhost:8000',
+      '/email-quote':      'http://localhost:8000',
+      '/compare-material': 'http://localhost:8000',
       '/chat':          'http://localhost:8000',
       '/api/chat': {
         target: 'http://localhost:8000',
