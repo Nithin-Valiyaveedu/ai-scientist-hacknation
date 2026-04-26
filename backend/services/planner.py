@@ -6,8 +6,6 @@ Stage 2: Generate protocol (GPT call 1)
 Stage 3: Generate materials (GPT call 2)
 Stage 4: Generate budget + timeline + validation (GPT call 3)
 """
-from functools import lru_cache
-
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 
@@ -16,13 +14,14 @@ from models.schemas import (
     ProtocolStep,
     ProtocolOnly,
     MaterialsOnly,
+    OverheadOnly,
     BudgetTimelineValidation,
 )
 from services.feedback import get_relevant_corrections, format_corrections_for_prompt
 
 
 def _llm():
-    return ChatOpenAI(model="gpt-5-mini", temperature=1)
+    return ChatOpenAI(model="gpt-4o-mini", temperature=0.3)
 
 
 def _steps_text(protocol: list[ProtocolStep]) -> str:
@@ -37,15 +36,19 @@ _PROTOCOL_PROMPT = ChatPromptTemplate.from_messages([
         "You are an expert experimental scientist. Generate a precise, step-by-step lab protocol "
         "for the given hypothesis. Produce 8-15 specific, actionable steps grounded in published methods. "
         "Each step should be a single clear instruction a lab technician can follow directly.\n\n"
-        "IMPORTANT: For each step, populate the 'citations' field with any reference URLs (from the "
-        "References section below) that directly support or ground that step. Only cite URLs that were "
-        "provided — do not invent URLs. If no reference applies to a step, leave citations empty."
+        "CITATIONS — this is mandatory:\n"
+        "- You are given a list of reference URLs below.\n"
+        "- For EVERY step, assign the most relevant reference URL(s) from that list to the 'citations' field.\n"
+        "- Distribute citations across steps — do not concentrate them all on one step.\n"
+        "- If a step is a general lab technique, cite the reference whose method is closest.\n"
+        "- Only use URLs from the provided list — do not invent URLs.\n"
+        "- Aim for at least 80% of steps to have at least one citation."
         "{corrections_block}"
     )),
     ("human", (
         "Hypothesis: {question}\n\n"
         "Literature context:\n{literature_context}\n\n"
-        "References (cite these URLs in relevant steps):\n{references}"
+        "References (you MUST cite these across protocol steps):\n{references}"
     )),
 ])
 
@@ -96,22 +99,26 @@ def generate_materials(
     return [m.model_dump() for m in result.materials]
 
 
-# ── Stage 4: Budget + Timeline + Validation ────────────────────────────────────
+# ── Stage 4: Overhead + Timeline + Validation ─────────────────────────────────
+# Material costs come directly from the enriched materials list (deterministic).
+# The LLM only estimates additional overhead: equipment, services, consumables.
 
-_BTW_PROMPT = ChatPromptTemplate.from_messages([
+_OVERHEAD_PROMPT = ChatPromptTemplate.from_messages([
     ("system", (
-        "You are a scientific project manager. Given a protocol and materials list, produce:\n"
-        "- Budget: line items (materials + consumables + equipment rental) with USD costs. "
-        "  Total must equal sum of all line items.\n"
-        "- Timeline: 2-4 phases (e.g. 'Week 1', 'Week 2-3') each with 2-5 concrete tasks.\n"
-        "- Validation: 2-4 criteria — each with a metric, measurement method, "
-        "  quantitative success threshold, and failure indicator."
+        "You are a scientific project manager. The reagent costs are already fixed — do NOT include them.\n"
+        "Your job is to estimate ADDITIONAL overhead costs only:\n"
+        "  • Equipment rental / depreciation (e.g. centrifuge time, flow cytometer)\n"
+        "  • Core facility / sequencing services\n"
+        "  • Consumables not in the materials list (gloves, tubes, plates, tips)\n"
+        "  • Safety / waste disposal\n"
+        "Produce 2–5 overhead line items with realistic USD costs.\n"
+        "Also produce the timeline (2-4 phases) and validation criteria (2-4 items)."
         "{corrections_block}"
     )),
     ("human", (
         "Hypothesis: {question}\n\n"
         "Protocol:\n{protocol}\n\n"
-        "Materials:\n{materials}"
+        "Fixed reagent costs (already accounted for — do not repeat):\n{materials}"
     )),
 ])
 
@@ -123,17 +130,34 @@ def generate_budget_timeline_validation(
     corrections_block: str,
 ) -> dict:
     materials_text = "\n".join(
-        f"- {m['name']} ({m['catalog_number']}, {m['supplier']}): ${m['unit_price']} / {m['quantity']}"
+        f"- {m['name']} ({m.get('catalog_number','')}, {m.get('supplier','')}): ${m['unit_price']} / {m.get('quantity','')}"
         for m in materials
     )
-    chain = _BTW_PROMPT | _llm().with_structured_output(BudgetTimelineValidation)
-    result: BudgetTimelineValidation = chain.invoke({
-        "question": question,
-        "protocol": _steps_text(protocol),
-        "materials": materials_text,
+
+    chain = _OVERHEAD_PROMPT | _llm().with_structured_output(OverheadOnly)
+    result: OverheadOnly = chain.invoke({
+        "question":          question,
+        "protocol":          _steps_text(protocol),
+        "materials":         materials_text,
         "corrections_block": corrections_block,
     })
-    return result.model_dump()
+
+    # Build budget deterministically: material lines (exact prices) + LLM overhead
+    material_lines = [
+        {"item": m["name"], "cost": round(float(m.get("unit_price", 0)), 2)}
+        for m in materials
+        if m.get("unit_price", 0) > 0
+    ]
+    overhead_lines = [o.model_dump() for o in result.overhead]
+    all_lines      = material_lines + overhead_lines
+    total          = round(sum(line["cost"] for line in all_lines), 2)
+
+    return {
+        "budget":       all_lines,
+        "total_budget": total,
+        "timeline":     [p.model_dump() for p in result.timeline],
+        "validation":   [v.model_dump() for v in result.validation],
+    }
 
 
 # ── Single-shot (legacy, used by non-streaming endpoint) ──────────────────────
@@ -159,12 +183,10 @@ _PLAN_PROMPT = ChatPromptTemplate.from_messages([
 ])
 
 
-@lru_cache(maxsize=256)
-def _generate_cached_plan(
+def generate_experiment_plan(
     question: str,
     literature_context: str,
-    references_text: str,
-    corrections_block: str,
+    references: list[str],
 ) -> ExperimentPlan:
     corrections = get_relevant_corrections(question)
     corrections_block = format_corrections_for_prompt(corrections)
