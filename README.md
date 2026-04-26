@@ -274,4 +274,4 @@ standard DMSO protocol.
 
 ## License
 
-MIT © 2026 Nithin Valiyaveedu — see [LICENSE](./LICENSE)
+MIT © 2026 Made with Love ❤️ and lost of Redbull by Nithin Valiyaveedu, Hoi Tung Ma, Gaurav Arora — see [LICENSE](./LICENSE)
