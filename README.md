@@ -1,4 +1,4 @@
-# LabAgent
+# LabProcure
 ### From Hypothesis to Runnable Experiment by Voice and Chat
 
 > Built for Hack-Nation 2026
@@ -7,7 +7,7 @@
 
 ## What It Does
 
-Paste a scientific hypothesis. In under 60 seconds, LabAgent returns a complete, operationally grounded lab experiment plan — with real catalog numbers, USD cost estimates, and a phased timeline. You can also **talk to it** via voice call to ask questions about the literature or the generated protocol in real time.
+Paste a scientific hypothesis. In under 60 seconds, LabProcure returns a complete, operationally grounded lab experiment plan — with real catalog numbers, USD cost estimates, and a phased timeline. You can also **talk to it** via voice call to ask questions about the literature or the generated protocol in real time.
 
 **Three stages:**
 
@@ -22,7 +22,7 @@ Paste a scientific hypothesis. In under 60 seconds, LabAgent returns a complete,
 
 3. **Feedback Loop** — Every plan section is inline-editable. Corrections are embedded and stored in Supabase. The next similar experiment plan automatically reflects those expert corrections via few-shot prompt injection — no retraining required.
 
-4. **Voice Assistant** — A floating mic button on the Literature QC and Plan pages opens a live voice call powered by ElevenLabs Conversational AI. The agent knows your current papers and protocol, and can call `search_literature` (a client-side tool) to look up new papers mid-conversation.
+4. **Voice Assistant(LabAgent)** — A floating mic button on the Literature QC and Plan pages opens a live voice call powered by ElevenLabs Conversational AI. The agent knows your current papers and protocol, and can call `search_literature` (a client-side tool) to look up new papers mid-conversation.
 
 5. **Material Comparison & Email** — Compare reagent alternatives via Tavily + GPT, and send supplier RFQ emails via Resend — all inside the Plan dashboard.
 
