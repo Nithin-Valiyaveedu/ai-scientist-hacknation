@@ -24,6 +24,7 @@ export default defineConfig({
       '/email-quote':      'http://localhost:8000',
       '/compare-material': 'http://localhost:8000',
       '/chat':          'http://localhost:8000',
+      '/voice-session': 'http://localhost:8000',
       '/api/chat': {
         target: 'http://localhost:8000',
         changeOrigin: true,
