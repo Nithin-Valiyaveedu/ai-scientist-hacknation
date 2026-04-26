@@ -33,9 +33,9 @@ Paste a scientific hypothesis. In under 60 seconds, LabProcure returns a complet
 | Layer | Technology |
 |---|---|
 | Backend | FastAPI + Python 3.13 |
-| LLM | GPT-4o / GPT-4o-mini via LangChain + OpenAI |
+| LLM | OpenAI via LangChain + OpenAI |
 | Literature Search | Semantic Scholar API + Tavily fallback |
-| Price Lookups | Tavily web search + GPT extraction |
+| Price Lookups | Tavily web search + LLM extraction |
 | Embeddings | OpenAI `text-embedding-3-small` |
 | Feedback Store | Supabase (PostgreSQL + pgvector) |
 | Voice AI | ElevenLabs Conversational AI (WebSocket, client tools) |
