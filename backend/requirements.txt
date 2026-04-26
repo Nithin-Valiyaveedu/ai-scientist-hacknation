@@ -13,3 +13,6 @@ pydantic==2.10.3
 
 # Supabase (feedback store + pgvector)
 supabase==2.10.0
+
+# HTTP client (used by email agent + already a transitive dep of supabase)
+httpx>=0.27.0

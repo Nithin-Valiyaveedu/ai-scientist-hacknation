@@ -14,14 +14,20 @@ from models.schemas import (
     ProtocolStep,
     ProtocolOnly,
     MaterialsOnly,
+    MaterialDraftOnly,
     OverheadOnly,
     BudgetTimelineValidation,
 )
 from services.feedback import get_relevant_corrections, format_corrections_for_prompt
 
 
+# temperature=0 across the entire pipeline — any variation here propagates into
+# downstream prompts and produces different budget totals between runs.
+_LLM = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+
+
 def _llm():
-    return ChatOpenAI(model="gpt-4o-mini", temperature=0.3)
+    return _LLM
 
 
 def _steps_text(protocol: list[ProtocolStep]) -> str:
@@ -69,20 +75,54 @@ def generate_protocol(
     return result.protocol
 
 
-# ── Stage 3: Materials ─────────────────────────────────────────────────────────
+# ── Stage 3: Materials (drafts — no catalog numbers or prices) ─────────────────
+# Catalog numbers and prices are resolved by prices.py using Tavily so they are
+# always real and deterministic. The LLM only decides *what* to order and *from whom*.
 
 _MATERIALS_PROMPT = ChatPromptTemplate.from_messages([
     ("system", (
-        "You are a lab procurement expert. Given a protocol, generate a realistic materials list. "
-        "Use real catalog numbers: Sigma-Aldrich format (e.g. 'A1978'), ThermoFisher (e.g. 'AM9738'), "
-        "VWR (e.g. '89125-162'), Bio-Rad (e.g. '1610177'). Include 5-12 items with accurate unit prices in USD."
+        "You are a lab procurement expert. Given a protocol, list the reagents needed.\n"
+        "For each item specify:\n"
+        "  • name     — the specific reagent or kit (e.g. 'Kanamycin sulfate', 'Q5 Hot Start Master Mix')\n"
+        "  • supplier — the best supplier (Sigma-Aldrich, ThermoFisher, NEB, Bio-Rad, VWR, ATCC, etc.)\n"
+        "  • quantity — how much is needed (e.g. '5 g', '1 kit', '500 µL')\n\n"
+        "IMPORTANT: If previously used reagents are listed below, reuse their EXACT name and supplier. "
+        "Only add new items for anything not already covered.\n"
+        "Do NOT invent catalog numbers or prices — those will be fetched from real supplier data.\n"
+        "Include 5–12 items covering all reagents, kits, and consumables required by the protocol."
         "{corrections_block}"
     )),
     ("human", (
         "Hypothesis: {question}\n\n"
-        "Protocol steps:\n{protocol}"
+        "Protocol steps:\n{protocol}\n\n"
+        "Previously used reagents for this hypothesis (reuse exact names):\n{known_reagents}"
     )),
 ])
+
+
+def _get_known_reagents(question: str) -> str:
+    """Pull cached reagents whose names overlap with the hypothesis keywords."""
+    from services.prices import _supabase_ok, _db
+    if not _supabase_ok():
+        return "None"
+    # Use a few key words from the hypothesis to search the cache
+    keywords = [w for w in question.split() if len(w) > 5][:6]
+    try:
+        rows = (
+            _db().table("material_prices")
+            .select("name, supplier, catalog_number")
+            .or_(",".join(f"name.ilike.%{k}%" for k in keywords))
+            .limit(15)
+            .execute()
+        )
+        if not rows.data:
+            return "None"
+        return "\n".join(
+            f"- {r['name']} ({r['supplier']}, SKU {r['catalog_number']})"
+            for r in rows.data
+        )
+    except Exception:
+        return "None"
 
 
 def generate_materials(
@@ -90,13 +130,23 @@ def generate_materials(
     protocol: list[ProtocolStep],
     corrections_block: str,
 ) -> list[dict]:
-    chain = _MATERIALS_PROMPT | _llm().with_structured_output(MaterialsOnly)
-    result: MaterialsOnly = chain.invoke({
-        "question": question,
-        "protocol": _steps_text(protocol),
+    """
+    Returns material drafts: [{name, supplier, quantity, catalog_number='', unit_price=0.0}]
+    Seeded with cached reagents so the LLM reuses exact names → consistent cache hits.
+    """
+    known = _get_known_reagents(question)
+    chain = _MATERIALS_PROMPT | _llm().with_structured_output(MaterialDraftOnly)
+    result: MaterialDraftOnly = chain.invoke({
+        "question":          question,
+        "protocol":          _steps_text(protocol),
         "corrections_block": corrections_block,
+        "known_reagents":    known,
     })
-    return [m.model_dump() for m in result.materials]
+    return [
+        {"name": m.name, "supplier": m.supplier, "quantity": m.quantity,
+         "catalog_number": "", "unit_price": 0.0}
+        for m in result.materials
+    ]
 
 
 # ── Stage 4: Overhead + Timeline + Validation ─────────────────────────────────
@@ -142,15 +192,34 @@ def generate_budget_timeline_validation(
         "corrections_block": corrections_block,
     })
 
-    # Build budget deterministically: material lines (exact prices) + LLM overhead
-    material_lines = [
+    # ── Materials (exact, from price cache) ───────────────────────────────────
+    material_lines  = [
         {"item": m["name"], "cost": round(float(m.get("unit_price", 0)), 2)}
         for m in materials
         if m.get("unit_price", 0) > 0
     ]
-    overhead_lines = [o.model_dump() for o in result.overhead]
-    all_lines      = material_lines + overhead_lines
-    total          = round(sum(line["cost"] for line in all_lines), 2)
+    materials_total = sum(l["cost"] for l in material_lines)
+
+    # ── Overhead (fixed rate — LLM only supplies category names) ──────────────
+    # Standard academic lab overhead is ~22% of reagent costs.
+    # We fix the TOTAL overhead to this rate so the budget is fully deterministic
+    # once material prices are locked. The LLM output only determines display names.
+    OVERHEAD_RATE   = 0.22
+    overhead_budget = round(materials_total * OVERHEAD_RATE, 2)
+
+    raw = [(o.item, max(float(o.cost), 0.01)) for o in result.overhead] or [("Lab overhead", 1.0)]
+    raw_sum = sum(c for _, c in raw)
+    overhead_lines = [
+        {"item": item, "cost": round((cost / raw_sum) * overhead_budget, 2)}
+        for item, cost in raw
+    ]
+    # Fix any cent-rounding drift
+    drift = round(overhead_budget - sum(l["cost"] for l in overhead_lines), 2)
+    if overhead_lines:
+        overhead_lines[0]["cost"] = round(overhead_lines[0]["cost"] + drift, 2)
+
+    all_lines = material_lines + overhead_lines
+    total     = round(sum(l["cost"] for l in all_lines), 2)
 
     return {
         "budget":       all_lines,

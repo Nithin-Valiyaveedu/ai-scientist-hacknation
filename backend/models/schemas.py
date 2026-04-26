@@ -118,6 +118,17 @@ class MaterialsOnly(BaseModel):
     materials: list[Material]
 
 
+class MaterialDraft(BaseModel):
+    """LLM output for stage 3 — no catalog number or price (those come from Tavily)."""
+    name:     str = Field(..., description="Specific reagent or kit name (e.g. 'Kanamycin sulfate')")
+    supplier: str = Field(..., description="Best supplier (e.g. 'Sigma-Aldrich', 'ThermoFisher', 'NEB')")
+    quantity: str = Field(..., description="Amount needed (e.g. '5 g', '1 kit', '100 reactions')")
+
+
+class MaterialDraftOnly(BaseModel):
+    materials: list[MaterialDraft]
+
+
 class OverheadOnly(BaseModel):
     """LLM-generated non-material costs only (equipment, services, consumables)."""
     overhead: list[BudgetLine] = Field(

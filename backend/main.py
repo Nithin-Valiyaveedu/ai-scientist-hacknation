@@ -13,9 +13,12 @@ from routers.literature_qc import router as literature_qc_router
 from routers.generate_plan import router as generate_plan_router
 from routers.feedback import router as feedback_router
 from routers.chat import router as chat_router
+from routers.email_quote import router as email_quote_router
+from routers.compare import router as compare_router
+from routers.voice import router as voice_router
 
 app = FastAPI(
-    title="The AI Scientist",
+    title="LabAgent",
     description="Takes a natural language scientific question and outputs a complete, runnable lab experiment plan.",
     version="1.0.0",
 )
@@ -32,8 +35,11 @@ app.include_router(literature_qc_router)
 app.include_router(generate_plan_router)
 app.include_router(feedback_router)
 app.include_router(chat_router)
+app.include_router(email_quote_router)
+app.include_router(compare_router)
+app.include_router(voice_router)
 
 
 @app.get("/", tags=["health"])
 async def health():
-    return {"status": "ok", "service": "The AI Scientist"}
+    return {"status": "ok", "service": "LabAgent"}

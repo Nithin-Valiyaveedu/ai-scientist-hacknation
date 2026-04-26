@@ -101,27 +101,31 @@ def save_correction(
 
 def _update_price_cache(original_text: str, corrected_text: str, item_label: str) -> None:
     """
-    Parse catalog number, supplier, and new price from a corrected material string
-    and upsert them into the material_prices cache as a manual correction.
+    Parse the corrected material string and upsert into the material_prices cache
+    as source='manual' so it takes priority on the next plan generation.
+
+    The InlineEdit format is:
+      "{name} | SKU: {catalog} | Supplier: {supplier} | Price: ${price} | Qty: {qty}"
+
+    With Option C the catalog number may now be real (from Tavily), so we prefer the
+    corrected catalog number if present, otherwise fall back to the original.
     """
     try:
-        from services.prices import upsert_price
+        from services.prices import upsert_price, _norm_supplier
         orig = _parse_material_text(original_text)
         corr = _parse_material_text(corrected_text)
 
-        catalog  = corr.get("catalog_number") or orig.get("catalog_number", "")
-        supplier = corr.get("supplier")       or orig.get("supplier", "")
-        name     = corr.get("name")           or orig.get("name") or item_label
+        name     = corr.get("name")     or orig.get("name")     or item_label
+        supplier = _norm_supplier(corr.get("supplier") or orig.get("supplier") or "")
+        # Prefer a real catalog number — the corrected text might have one the scientist typed
+        catalog  = corr.get("catalog_number") or orig.get("catalog_number") or "N/A"
         price    = corr.get("unit_price")
 
-        if catalog and supplier and price is not None:
+        if supplier and price is not None:
             upsert_price(catalog, supplier, name, price, source="manual")
-            logger.info("Price cache updated from correction: %s/%s = $%.2f", catalog, supplier, price)
+            logger.info("Price cache updated (manual): %s/%s/%s = $%.2f", name, catalog, supplier, price)
         else:
-            logger.debug(
-                "Price cache not updated — missing fields (catalog=%r, supplier=%r, price=%r)",
-                catalog, supplier, price,
-            )
+            logger.debug("Price cache skipped — missing supplier or price (supplier=%r, price=%r)", supplier, price)
     except Exception as exc:
         logger.warning("Price cache update failed: %s", exc)
 
