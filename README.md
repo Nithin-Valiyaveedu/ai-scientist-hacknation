@@ -13,7 +13,7 @@ Paste a scientific hypothesis. In under 60 seconds, LabAgent returns a complete,
 
 1. **Literature QC** — Semantic Scholar paper search + OpenAI novelty classification. Returns a novelty signal (`not found` / `similar work exists` / `exact match found`), up to 8 papers with abstracts, and reference URLs.
 
-2. **Experiment Plan** — GPT-4o with structured output generates:
+2. **Experiment Plan** — OpenAI with structured output generates:
    - Step-by-step protocol (8–15 steps)
    - Materials list with realistic catalog numbers (Sigma-Aldrich, ThermoFisher, etc.)
    - Itemised budget with USD cost estimates (live Tavily price lookups)
@@ -274,4 +274,4 @@ standard DMSO protocol.
 
 ## License
 
-MIT © 2026 Made with Love ❤️ and lost of Redbull by Nithin Valiyaveedu, Hoi Tung Ma, Gaurav Arora — see [LICENSE](./LICENSE)
+MIT © 2026 Made with Love ❤️ and lot of Redbull by Nithin Valiyaveedu, Hoi Tung Ma, Gaurav Arora — see [LICENSE](./LICENSE)
