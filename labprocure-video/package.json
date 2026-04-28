@@ -1,0 +1,21 @@
+{
+  "name": "labprocure-video",
+  "version": "1.0.0",
+  "description": "LabProcure product demo video — 30s, 1920x1080, 30fps",
+  "scripts": {
+    "studio": "npx remotion studio src/index.jsx",
+    "render": "npx remotion render src/index.jsx LabProcureDemo out/labprocure-demo.mp4",
+    "still": "npx remotion still src/index.jsx LabProcureDemo --frame=45 --output=out/preview.png"
+  },
+  "dependencies": {
+    "remotion": "^4.0.0",
+    "@remotion/cli": "^4.0.0",
+    "@remotion/transitions": "^4.0.0",
+    "@remotion/google-fonts": "^4.0.0",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
+  },
+  "remotion": {
+    "entryPoint": "src/index.jsx"
+  }
+}
